@@ -32,7 +32,7 @@ class MainViewController: UIViewController {
             self.testImageView.image = img
              let imgData = img?.noir.toPixelArray()
              
-             let url = URL(string: "http://0.0.0.0:5000/add")
+             let url = URL(string: "https://mlocrserver.herokuapp.com/add")
              var request = URLRequest(url: url!)
              request.httpMethod = "POST"
              request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -42,13 +42,15 @@ class MainViewController: UIViewController {
              let jsonData = try! JSONEncoder().encode(requestData)
             
              request.httpBody = jsonData
+             request.addValue("\(jsonData.count)", forHTTPHeaderField: "Content-Length")
              
              let task = URLSession.shared.dataTask(with: request) {(data, response, error ) in
              
-             if data != nil {
-                 var str = String(data: data!, encoding: String.Encoding.utf8)
-                 print("\(str)")
-             }
+                 if data != nil {
+                    if let str = String(data: data!, encoding: String.Encoding.utf8) {
+                        self.showToast(controller: self, message: "Le nouvel exemple pour \(str) a bien été ajouté", seconds: 2)
+                    }
+                 }
              }
              
              task.resume()
@@ -56,7 +58,6 @@ class MainViewController: UIViewController {
         
         alertController.addAction(alertAction)
         self.present(alertController, animated: true, completion: nil)
-        
     }
     
     @IBAction func goToList(_ sender: Any) {
@@ -99,7 +100,7 @@ class MainViewController: UIViewController {
             self.testImageView.image = img
             let imgData = img?.noir.toPixelArray()
             
-            let url = URL(string: "http://0.0.0.0:5000/predict")
+            let url = URL(string: "https://mlocrserver.herokuapp.com/predict")
             var request = URLRequest(url: url!)
             request.httpMethod = "POST"
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -108,12 +109,16 @@ class MainViewController: UIViewController {
             let jsonData = try! JSONEncoder().encode(PredictRequestBody(aData: imgData!))
             
             request.httpBody = jsonData
+            let stringData = String(data: jsonData, encoding: String.Encoding.utf8)
+            request.setValue("\(String(describing: stringData?.lengthOfBytes(using: String.Encoding.utf8)))", forHTTPHeaderField: "Content-Length")
             
             let task = URLSession.shared.dataTask(with: request) {(data, response, error ) in
                 
                 if data != nil {
-                    var str = String(data: data!, encoding: String.Encoding.utf8)
-                    print("\(str)")
+                    if let str = String(data: data!, encoding: String.Encoding.utf8) {
+                        print("\(str)")
+                        self.showToast(controller: self, message: "\(str)", seconds: 3)
+                    }
                 }
             }
             
@@ -141,6 +146,18 @@ class MainViewController: UIViewController {
             } catch {
                 
             }
+        }
+    }
+    func showToast(controller: UIViewController, message : String, seconds: Double) {
+        let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
+        alert.view.backgroundColor = UIColor.black
+        alert.view.alpha = 0.6
+        alert.view.layer.cornerRadius = 15
+        
+        controller.present(alert, animated: true)
+        
+        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + seconds) {
+            alert.dismiss(animated: true)
         }
     }
     
@@ -175,14 +192,6 @@ class MainViewController: UIViewController {
 
 extension UIImage {
     func toPixels() -> [Double] {
-        
-        guard let cg = cgImage else {
-            return [Double]()
-        }
-        
-        /*
-        print("Original bitsPerComponent : \(cg.bitsPerComponent) \n BytesPerRow : \(cg.bytesPerRow) \n BitmapInfo : \(cg.bitmapInfo) \n width : \(cg.width) \n  height : \(cg.height)")
-        */
         
         let totalBytes = (self.cgImage?.height)! * (self.cgImage?.bytesPerRow)!
         

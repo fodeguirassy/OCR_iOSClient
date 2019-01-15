@@ -21,6 +21,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         w.rootViewController = navController
         w.makeKeyAndVisible()
         self.window = w
+        
+        setenv("CFNETWORK_DIAGNOSTICS", "3", 1);
+
         return true
     }
 
